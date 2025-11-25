@@ -1,6 +1,6 @@
 # ✈️ Flight Tracker Globe
 
-A real-time flight tracking visualization tool that displays live aircraft positions on an interactive 3D globe. Search for any active flight by code or track celebrity private jets with detailed telemetry data.
+A real-time flight tracking visualization tool that displays live aircraft positions on an interactive 3D globe. Search for any active flight by code with detailed telemetry data.
 
 **Live Demo:** [https://flight-tracker-liard.vercel.app/](https://flight-tracker-liard.vercel.app/)
 
@@ -65,7 +65,6 @@ Flight Tracker Globe is a single-page web application that provides real-time ai
 ### Search Functionality
 
 - **Flight Code Search**: Enter any ICAO callsign (e.g., `AAL100`, `BA58`)
-- **Celebrity Tracking**: Search by name (e.g., "Taylor Swift", "Elon Musk")
 - **Fuzzy Matching**: Handles spaces and case variations
 - **Auto-retry Logic**: Attempts multiple API calls for better results
 
@@ -89,7 +88,6 @@ Visit the deployed app: **[https://flight-tracker-liard.vercel.app/](https://fli
 
 1. **Search for a Flight**
    - Enter a flight code in the search bar (e.g., `UAL2142`, `DLH456`)
-   - Or try a celebrity name (e.g., "Taylor Swift")
    - Press Enter or click Search
 
 2. **View Flight Information**
@@ -233,103 +231,6 @@ The application is designed to support additional APIs for enhanced data:
 
 ---
 
-## 🚀 Installation & Deployment
-
-### Prerequisites
-
-- Modern web browser with WebGL support
-- Internet connection (for CDN resources)
-- (Optional) Vercel CLI for deployment
-
-### Local Development
-
-1. **Clone or Download**
-   # Download the HTML file
-   curl -O https://flight-tracker-liard.vercel.app/index.html
-
-2. **Run Locally**
-   # Simple HTTP server (Python 3)
-   python -m http.server 8000
-   
-   # Or use Node.js
-   npx http-server -p 8000
-
-3. **Access Application**
-   http://localhost:8000
-
-### Deploy to Vercel
-
-#### Method 1: Vercel CLI
-
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-cd your-project-folder
-vercel
-
-# Follow prompts to login and configure
-
-#### Method 2: Vercel Dashboard
-
-1. Create project folder with `index.html`
-2. Go to [vercel.com](https://vercel.com)
-3. Click "Add New Project"
-4. Drag and drop your folder
-5. Click "Deploy"
-
-#### Method 3: GitHub Integration
-
-1. Push code to GitHub repository
-2. Connect repository to Vercel
-3. Auto-deploy on every push
-
----
-
-## 📁 Project Structure
-
-flight-tracker/
-│
-├── index.html              # Main application file (single-page app)
-├── README.md              # This documentation
-├── vercel.json            # (Optional) Vercel configuration
-└── .gitignore             # (Optional) Git ignore rules
-
-### Single File Architecture
-
-The application uses a single HTML file containing:
-
-- **HTML Structure**: Semantic markup for layout
-- **CSS Styles**: Embedded `<style>` tag with complete styling
-- **JavaScript Logic**: Embedded `<script>` tag with all application code
-
-**Why Single File?**
-- Simplifies deployment (one file to upload)
-- No build process required
-- Easy to share and distribute
-- Perfect for Vercel/Netlify static hosting
-
----
-
-## ⚙️ Configuration
-
-### Celebrity Flight Mappings
-
-Edit the `celebrityToFlights` object in the JavaScript section:
-
-const celebrityToFlights = {
-  "taylor swift": "TAYLOR1",  // Replace with actual callsign
-  "elon musk": "EJM",
-  "kylie jenner": "KYLIE1",
-  // Add more celebrity mappings here
-};
-
-**Finding Real Celebrity Jet Codes:**
-1. Visit celebrity jet tracking sites (e.g., CelebJets, JetSpy)
-2. Look up aircraft registration (N-number)
-3. Convert to ICAO callsign
-4. Add to mapping object
-
 ### API Configuration
 
 To add Aviation Edge or AviationStack:
@@ -371,7 +272,6 @@ let GlobeInstance = Globe()(globeEl)
 
 1. **Search Handler** (`form.addEventListener`)
    - Input validation
-   - Celebrity name mapping
    - API request coordination
 
 2. **Flight Data Fetcher** (`fetchFlightsData`)
@@ -424,7 +324,7 @@ if (DEBUG) console.log('Flight data:', flightState);
 
 ---
 
-## ⚠️ Limitations & Known Issues
+##  Limitations & Known Issues
 
 ### Current Limitations
 
@@ -462,45 +362,6 @@ if (DEBUG) console.log('Flight data:', flightState);
 
 ---
 
-## 🔮 Future Enhancements
-
-### Planned Features
-
-- [ ] **Real-time Auto-refresh**: Update positions every 10 seconds
-- [ ] **Flight Search Autocomplete**: Suggest flights as you type
-- [ ] **Multiple Flight Tracking**: Track several flights simultaneously
-- [ ] **Historical Playback**: Replay past flight trajectories
-- [ ] **Airport Database**: Show major airports on globe
-- [ ] **Weather Overlay**: Display real-time weather patterns
-- [ ] **Flight Alerts**: Notifications for specific flights
-- [ ] **Route Planning**: Calculate optimal flight paths
-- [ ] **Share Feature**: Generate shareable links to specific flights
-- [ ] **Mobile App**: Native iOS/Android versions
-
-### Technical Improvements
-
-- [ ] Add service worker for offline support
-- [ ] Implement request caching to reduce API calls
-- [ ] Add WebSocket support for live data streaming
-- [ ] Optimize 3D rendering for better performance
-- [ ] Add unit tests for core functions
-- [ ] Implement CI/CD pipeline
-- [ ] Add analytics tracking
-- [ ] Create API proxy server for better rate limit handling
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-### Reporting Issues
-
-1. Check existing issues first
-2. Provide detailed description
-3. Include browser/OS information
-4. Add screenshots if applicable
----
 
 ## 📄 License
 
