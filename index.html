@@ -1,440 +1,1032 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flight Tracker Globe</title>
-  <style>
-    :root {
-      --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --color-background: #fcfcf9;
-      --color-surface: #fff;
-      --color-text: #13343b;
-      --color-primary: #21808d;
-      --color-primary-hover: #1d7480;
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: var(--color-background);
-      font-family: var(--font-family-base);
-      color: var(--color-text);
-    }
-    .container {
-      max-width: 900px;
-      margin: 32px auto;
-      padding: 0 20px;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.4em;
-      color: var(--color-primary);
-      letter-spacing: -1px;
-    }
-    .search-bar {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      margin-bottom: 24px;
-      gap: 8px;
-    }
-    .search-bar input {
-      flex: 1;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px;
-      outline: none;
-      transition: border-color 0.16s;
-    }
-    .search-bar input:focus {
-      border-color: var(--color-primary);
-    }
-    .search-bar button {
-      background: var(--color-primary);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 22px;
-      font-size: 1rem;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
-    }
-    .search-bar button:hover {
-      background: var(--color-primary-hover);
-    }
-    #globeViz {
-      width: 100%;
-      height: 500px;
-      min-height: 420px;
-      background: var(--color-surface);
-      border-radius: 16px;
-      box-shadow: 0 4px 18px rgba(31,33,33,0.07);
-      margin-bottom: 16px;
-    }
-    .status-bar {
-      font-size: 0.97rem;
-      color: #666;
-      margin-bottom: 12px;
-      min-height: 1.7em;
-    }
-    .flight-info {
-      background: var(--color-surface);
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 16px;
-      box-shadow: 0 2px 8px rgba(31,33,33,0.05);
-    }
-    .flight-info h2 {
-      font-size: 1.3rem;
-      margin: 0 0 16px 0;
-      color: var(--color-primary);
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-    .info-item {
-      display: flex;
-      flex-direction: column;
-    }
-    .info-label {
-      font-size: 0.85rem;
-      color: #777;
-      margin-bottom: 4px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .info-value {
-      font-size: 1.05rem;
-      color: var(--color-text);
-      font-weight: 500;
-    }
-  </style>
-  <!-- Globe.gl CDN -->
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: [
+              'system-ui',
+              '-apple-system',
+              'BlinkMacSystemFont',
+              '"SF Pro Text"',
+              '"SF Pro Display"',
+              'Inter',
+              'sans-serif'
+            ]
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Globe.gl + three.js -->
   <script src="https://unpkg.com/three@0.150.1/build/three.min.js"></script>
   <script src="https://unpkg.com/globe.gl"></script>
+
+  <style>
+    #globeViz {
+      width: 100%;
+      height: 480px;
+      min-height: 360px;
+    }
+
+    .autocomplete-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .autocomplete-scrollbar::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.7);
+    }
+  </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Flight Tracker Globe</h1>
-    <form class="search-bar" id="flightSearchForm" autocomplete="off">
-      <input id="flightCodeInput" type="text" placeholder="Enter flight code (e.g., BA58) or celebrity name" required />
-      <button type="submit">Search</button>
-    </form>
-    <div class="status-bar" id="statusBar"></div>
-    <div id="globeViz"></div>
-    <div class="flight-info" id="flightInfo" style="display: none;">
-      <h2>Flight Details</h2>
-      <div class="info-grid" id="infoGrid"></div>
-    </div>
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300 font-sans">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header / Hero -->
+    <header class="flex items-center justify-between mb-8">
+      <div class="text-center mx-auto">
+        <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
+          Live Flight Tracker Globe
+        </h1>
+        <p class="mt-2 text-sm sm:text-base text-slate-500 dark:text-slate-400">
+          Track real flights by callsign (e.g.,
+          <code class="px-1 rounded bg-slate-100 dark:bg-slate-800">BA58</code>,
+          <code class="px-1 rounded bg-slate-100 dark:bg-slate-800">AAL100</code>), follow multiple flights, and watch their paths in real time.
+        </p>
+      </div>
+      <button
+        id="themeToggle"
+        type="button"
+        class="hidden sm:inline-flex items-center gap-2 ml-4 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 px-3 py-1.5 text-xs font-medium shadow-sm hover:shadow transition-all"
+      >
+        <span id="themeIcon">🌞</span>
+        <span id="themeLabel" class="hidden md:inline">Light</span>
+      </button>
+    </header>
+
+    <!-- Search Card -->
+    <section class="bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800 rounded-2xl shadow-sm shadow-slate-200/40 dark:shadow-black/40 px-4 sm:px-6 py-4 sm:py-5 mb-5">
+      <div class="flex flex-col gap-3 items-center">
+        <form id="flightSearchForm" autocomplete="off" class="w-full max-w-xl flex items-center gap-2">
+          <div class="relative flex-1">
+            <input
+              id="flightCodeInput"
+              type="text"
+              required
+              placeholder="Enter single or multiple callsigns (BA58, AAL100, DAL1234)"
+              class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 px-3 py-2.5 text-sm sm:text-base outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+            />
+            <!-- Autocomplete -->
+            <div class="absolute left-0 right-0 mt-1 z-20">
+              <div
+                id="autocompleteItems"
+                class="hidden max-h-56 overflow-y-auto autocomplete-scrollbar rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg shadow-slate-200/60 dark:shadow-black/60 text-sm"
+              ></div>
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-50 text-slate-50 dark:text-slate-900 px-4 py-2.5 text-sm font-medium shadow-sm hover:shadow-md hover:bg-black dark:hover:bg-slate-200 transition"
+          >
+            Track
+          </button>
+        </form>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 text-center">
+          Separate multiple flights with commas.
+          Shareable link:
+          <code class="bg-slate-100 dark:bg-slate-800 px-1 rounded">?flight=BA58,AAL100</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- Status + Controls -->
+    <section class="mb-4 flex flex-col gap-3 items-center text-center">
+      <div id="statusBar" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 min-h-[1.5rem]">
+        Initializing live data…
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
+        <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 px-3 py-1">
+          <span id="autoRefreshDot" class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+          <span>Auto-refresh ~10s</span>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 px-3 py-1">
+          <span class="inline-block h-2 w-2 rounded-full bg-indigo-400"></span>
+          <span>Session playback</span>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="w-full max-w-xl flex items-center gap-3">
+        <button
+          id="playbackToggle"
+          type="button"
+          class="flex-shrink-0 rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        >
+          Enter Playback
+        </button>
+        <input
+          id="playbackSlider"
+          type="range"
+          min="0"
+          max="100"
+          value="0"
+          disabled
+          class="flex-1 accent-sky-500 disabled:opacity-40"
+        />
+        <span id="playbackTimeLabel" class="w-16 text-[0.7rem] sm:text-xs text-right text-slate-500 dark:text-slate-400">
+          Live
+        </span>
+      </div>
+    </section>
+
+    <!-- Globe Card -->
+    <section class="bg-slate-900 dark:bg-black rounded-3xl border border-slate-800/80 shadow-xl shadow-slate-900/60 mb-6">
+      <div id="globeViz" class="rounded-3xl overflow-hidden"></div>
+    </section>
+
+    <!-- Info / Alerts / Route -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start justify-items-center">
+
+      <!-- Flight Details -->
+      <div
+        id="flightInfo"
+        class="hidden max-w-md w-full bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4"
+      >
+        <h2 class="text-base sm:text-lg font-semibold mb-3 text-center">
+          Flight Details
+        </h2>
+        <div id="infoGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"></div>
+      </div>
+
+      <!-- Alerts + Route (centered) -->
+      <div class="w-full max-w-md flex flex-col gap-4 items-center">
+
+        <!-- Alerts -->
+        <div class="w-full bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4 text-sm text-center">
+          <h3 class="text-sm font-semibold mb-2">
+            Flight Alerts
+          </h3>
+          <div
+            id="alertsList"
+            class="space-y-2 text-xs sm:text-[0.8rem] text-slate-600 dark:text-slate-300"
+          >
+            <div class="text-center text-slate-400 dark:text-slate-500">
+              No alerts yet. We’ll show take-off, landing, and major altitude changes here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Route planning -->
+        <div class="w-full bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4 text-sm text-center">
+          <h3 class="text-sm font-semibold mb-2">
+            Route Planning (major airports)
+          </h3>
+          <form id="routeForm" class="flex flex-wrap gap-2 mb-2 justify-center">
+            <input
+              id="routeFrom"
+              type="text"
+              placeholder="From (IATA, e.g., ICN)"
+              class="flex-1 min-w-[80px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-sky-400 text-center"
+            />
+            <input
+              id="routeTo"
+              type="text"
+              placeholder="To (IATA, e.g., LHR)"
+              class="flex-1 min-w-[80px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-sky-400 text-center"
+            />
+            <button
+              type="submit"
+              class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-900 dark:bg-slate-100 text-slate-50 dark:text-slate-900 px-3 py-1.5 text-xs font-medium"
+            >
+              Plan
+            </button>
+          </form>
+          <div id="routeMeta" class="text-xs text-slate-500 dark:text-slate-400 text-center">
+            Uses great-circle distance between a small set of major airports.
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
+
   <script>
-    // Selector refs
+    // ==============================
+    // Config / constants
+    // ==============================
+
+    const OPENSKY_ENDPOINT = "https://opensky-network.org/api/states/all";
+
+    // Small airport DB for labels + route planning (real coordinates)
+    const AIRPORTS = [
+      { name: "Incheon Intl", iata: "ICN", lat: 37.4602, lon: 126.4407 },
+      { name: "London Heathrow", iata: "LHR", lat: 51.4700, lon: -0.4543 },
+      { name: "JFK Intl", iata: "JFK", lat: 40.6413, lon: -73.7781 },
+      { name: "Los Angeles Intl", iata: "LAX", lat: 33.9416, lon: -118.4085 },
+      { name: "Paris Charles de Gaulle", iata: "CDG", lat: 49.0097, lon: 2.5479 },
+      { name: "Tokyo Haneda", iata: "HND", lat: 35.5494, lon: 139.7798 },
+      { name: "Singapore Changi", iata: "SIN", lat: 1.3644, lon: 103.9915 },
+      { name: "Dubai Intl", iata: "DXB", lat: 25.2532, lon: 55.3657 },
+      { name: "Sydney Kingsford Smith", iata: "SYD", lat: -33.9399, lon: 151.1753 },
+      { name: "Toronto Pearson", iata: "YYZ", lat: 43.6777, lon: -79.6248 }
+    ];
+
+    // ==============================
+    // DOM references
+    // ==============================
+
+    const themeToggleBtn = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const themeLabel = document.getElementById("themeLabel");
     const form = document.getElementById("flightSearchForm");
     const input = document.getElementById("flightCodeInput");
-    const globeEl = document.getElementById("globeViz");
+    const autocompleteBox = document.getElementById("autocompleteItems");
     const statusBar = document.getElementById("statusBar");
+    const autoRefreshDot = document.getElementById("autoRefreshDot");
+    const playbackToggleBtn = document.getElementById("playbackToggle");
+    const playbackSlider = document.getElementById("playbackSlider");
+    const playbackTimeLabel = document.getElementById("playbackTimeLabel");
+    const alertsList = document.getElementById("alertsList");
+    const routeForm = document.getElementById("routeForm");
+    const routeFromInput = document.getElementById("routeFrom");
+    const routeToInput = document.getElementById("routeTo");
+    const routeMeta = document.getElementById("routeMeta");
+    const flightInfoEl = document.getElementById("flightInfo");
+    const infoGridEl = document.getElementById("infoGrid");
+    const globeEl = document.getElementById("globeViz");
 
-    // Celebrities flight mapping (demo: you can expand this)
-    const celebrityToFlights = {
-      "taylor swift": "TAYLOR1", // Example: Replace with actual jet flight codes
-      "elon musk": "EJM",        // Example
-      "kylie jenner": "KYLIE1"   // Example
-      // For real-world, use a richer celebrity flight database or scraping
-    };
+    // ==============================
+    // Global state
+    // ==============================
 
-    // OpenSky API endpoint (public, limited: https://opensky-network.org/apidoc/)
-    const OPENSKY_ENDPOINT = "https://opensky-network.org/api/states/all"; // No key needed, CORS OK
+    const trackedCodes = new Set();      // callsigns
+    const trackedFlights = new Map();    // code -> { state, history: [{lat,lon,t}], callsign }
+    const previousFlightInfos = new Map();
+    const alerts = [];
 
-    // Build and mount the 3D globe
-    let GlobeInstance = Globe()(globeEl)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundColor('#fcfcf9')
-      .showGraticules(true)
-      .width(globeEl.offsetWidth)
-      .height(globeEl.offsetHeight);
+    let GlobeInstance;
+    let lastStates = null;
+    let lastStatesTimestamp = 0;
+    let fetchErrorCount = 0;
 
-    // Responsive globe visual
-    window.addEventListener('resize', () => {
-      GlobeInstance.width([globeEl.offsetWidth]);
-      GlobeInstance.height([globeEl.offsetHeight]);
-    });
+    let autoRefreshTimeoutId = null;
+    let autoRefreshDelayMs = 10000;
 
-    // UTILITY: Sleep
-    function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+    let isPlaybackMode = false;
+    let playbackTimerId = null;
+    let playbackStart = 0;
+    let playbackEnd = 0;
+    let playbackTime = 0;
+    const playbackSpeed = 60; // 1s real = 60s flight time
 
-    // Detect if input is a celebrity or flight code
-    function parseSearch(query) {
-      if (!query) return null;
-      query = query.trim().toLowerCase();
-      if (celebrityToFlights[query]) {
-        return celebrityToFlights[query];
+    let plannedRouteArc = null;
+    let selectedCodeForDetails = null;
+
+    // ==============================
+    // Utility
+    // ==============================
+
+    function nowLabel() {
+      return new Date().toLocaleTimeString("en-US", {
+        hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit"
+      });
+    }
+
+    function resolveQueryToCodes(raw) {
+      if (!raw) return [];
+      const parts = raw.split(/[,\s]+/).map(p => p.trim()).filter(Boolean);
+      const codes = new Set();
+      for (const part of parts) {
+        if (/^[A-Z0-9]{2,8}$/i.test(part)) {
+          codes.add(part.toUpperCase());
+        }
       }
-      // Is flight code? Alpha+digits, 3-8 chars. (loose validation)
-      if (/^[a-z0-9]{3,8}$/i.test(query)) {
-        return query.toUpperCase();
+      return Array.from(codes);
+    }
+
+    function stateToInfo(s) {
+      const callsign = (s[1] || "").trim();
+      return {
+        callsign,
+        icao24: s[0],
+        originCountry: s[2] || "Unknown",
+        timePosition: s[3],
+        lastContact: s[4],
+        lon: s[5],
+        lat: s[6],
+        altitude: s[7] || 0,
+        onGround: !!s[8],
+        velocity: s[9] || 0,
+        verticalRate: s[11] || 0
+      };
+    }
+
+    function findFlightByCode(states, code) {
+      const clean = code.replace(/\s+/g, "").toUpperCase();
+      for (const s of states) {
+        const csRaw = s[1];
+        if (!csRaw) continue;
+        if (csRaw.replace(/\s+/g, "").toUpperCase() === clean) {
+          return s;
+        }
       }
       return null;
     }
 
-    // Fetch all flights from public OpenSky API
-    async function fetchFlightsData() {
+    function calculateGreatCircleDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function formatDistanceKm(km) {
+      if (km >= 1000) return (km / 1000).toFixed(1) + " Mm";
+      return Math.round(km) + " km";
+    }
+
+    function findAirportByIata(code) {
+      const c = code.trim().toUpperCase();
+      return AIRPORTS.find(a => a.iata === c) || null;
+    }
+
+    // ==============================
+    // Theme
+    // ==============================
+
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      html.classList.remove("light", "dark");
+      html.classList.add(theme);
+      if (theme === "dark") {
+        themeIcon.textContent = "🌙";
+        themeLabel.textContent = "Dark";
+        if (GlobeInstance) {
+          GlobeInstance
+            .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+            .backgroundColor("#020617");
+        }
+      } else {
+        themeIcon.textContent = "🌞";
+        themeLabel.textContent = "Light";
+        if (GlobeInstance) {
+          GlobeInstance
+            .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+            .backgroundColor("#f8fafc");
+        }
+      }
+      localStorage.setItem("ft_theme", theme);
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem("ft_theme");
+      if (saved === "dark" || saved === "light") {
+        applyTheme(saved);
+      } else {
+        const prefersDark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyTheme(prefersDark ? "dark" : "light");
+      }
+    }
+
+    themeToggleBtn.addEventListener("click", () => {
+      const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
+
+    // ==============================
+    // Networking
+    // ==============================
+
+    async function fetchFlightsData({ showStatus = true } = {}) {
+      const now = Date.now();
+      if (lastStates && now - lastStatesTimestamp < 8000) {
+        return lastStates;
+      }
       try {
-        statusBar.textContent = "Fetching latest live flight data…";
+        if (showStatus) {
+          statusBar.textContent = "Fetching live flight data…";
+        }
         const resp = await fetch(OPENSKY_ENDPOINT);
-        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
         const data = await resp.json();
-        return data.states || [];
-      } catch (err) {
-        statusBar.textContent = "Error fetching flight data.";
+        const states = data.states || [];
+        lastStates = states;
+        lastStatesTimestamp = Date.now();
+        fetchErrorCount = 0;
+        autoRefreshDelayMs = 10000;
+        autoRefreshDot.classList.remove("bg-red-400");
+        autoRefreshDot.classList.add("bg-emerald-400");
+        return states;
+      } catch (e) {
+        console.error("OpenSky error:", e);
+        if (showStatus) {
+          statusBar.textContent = "Error fetching flight data. OpenSky may be rate-limited or unavailable.";
+        }
+        fetchErrorCount += 1;
+        autoRefreshDot.classList.remove("bg-emerald-400");
+        autoRefreshDot.classList.add("bg-red-400");
+        if (fetchErrorCount === 1) autoRefreshDelayMs = 30000;
+        else autoRefreshDelayMs = 60000;
         return [];
       }
     }
 
-    // Extract live flight data for code
-    function findFlightByCode(states, code) {
-      // ICAO and callsign logic: match callsign (may have spaces/padding)
-      const clean = code.replace(/\s+/g, '').toUpperCase();
-      // Find best match
-      for (const s of states) {
-        if (!s[1]) continue;
-        // s[1] is callsign (flight display code, eg "AAL100 ")
-        if (s[1].replace(/\s+/g, '').toUpperCase() === clean) return s;
+    // ==============================
+    // Auto-refresh
+    // ==============================
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimeoutId) {
+        clearTimeout(autoRefreshTimeoutId);
+        autoRefreshTimeoutId = null;
       }
-      return null;
     }
 
-    // Show flight (as dot & path) on the globe
-    function visualizeFlight(flightState) {
-      // fields: https://opensky-network.org/apidoc/rest.html#responses
-      // s[5]=longitude, s[6]=latitude, s[9]=geo-altitude, s[2]=country, s[1]=callsign, s[3]=icao24
-      const callsign = flightState[1]?.trim() || "";
-      const lat = flightState[6], lon = flightState[5];
-      const icao24 = flightState[0];
-      const originCountry = flightState[2] || "Unknown";
-      const timePosition = flightState[3]; // Unix timestamp of last position update
-      const lastContact = flightState[4]; // Unix timestamp of last contact
-      const velocity = flightState[9] || 0; // m/s
-      const altitude = flightState[7] || 0; // meters (barometric)
-      const verticalRate = flightState[11] || 0; // m/s
-      const onGround = flightState[8] || false;
-
-      // Show marker and (demo) a short path showing past course (simulate with noise)
-      const arcLen = 7; // 7 points
-      let arcCoords = [];
-      // Simulate past trajectory points
-      for (let i = 0; i < arcLen; ++i) {
-        const offLat = lat - 1.2 + i * 0.4 + Math.random() * 0.2;
-        const offLon = lon - 1.8 + i * 0.6 + Math.random() * 0.3;
-        arcCoords.push([offLat, offLon]);
-      }
-      // Add current location as endpoint
-      arcCoords[arcCoords.length - 1] = [lat, lon];
-
-      // Set places and arcs
-      GlobeInstance.pointsData([
-        { lat, lng: lon, size: 0.15, color: '#21808d', label: `Flight ${callsign}` }
-      ])
-      .pointAltitude(0.01)
-      .pointRadius(0.3)
-      .pointColor('color')
-      .pointLabel('label');
-
-      GlobeInstance.arcsData([
-        {
-          startLat: arcCoords[0][0],
-          startLng: arcCoords[0][1],
-          endLat: arcCoords[arcCoords.length - 1][0],
-          endLng: arcCoords[arcCoords.length - 1][1],
-          color: ['#37b9e9', '#21808d'],
-          label: `${callsign} trajectory`
+    function scheduleNextAutoRefresh() {
+      if (autoRefreshTimeoutId) return;
+      autoRefreshTimeoutId = setTimeout(async () => {
+        autoRefreshTimeoutId = null;
+        if (document.hidden || isPlaybackMode || !trackedCodes.size) {
+          scheduleNextAutoRefresh();
+          return;
         }
-      ])
-      .arcStroke(0.5)
-      .arcDashLength(0.4)
-      .arcDashGap(0.2)
-      .arcDashInitialGap(1)
-      .arcDashAnimateTime(2500)
-      .arcColor('color')
-      .arcLabel('label');
+        await refreshTrackedFlights();
+        scheduleNextAutoRefresh();
+      }, autoRefreshDelayMs);
+    }
 
-      // Focus view
-      GlobeInstance.pointOfView({
-        lat, lng: lon, altitude: 2.25
-      }, 2400);
+    function startAutoRefresh() {
+      if (!trackedCodes.size || isPlaybackMode) return;
+      if (!autoRefreshTimeoutId) scheduleNextAutoRefresh();
+    }
 
-      // Update status
-      statusBar.textContent = `Showing flight ${callsign} at [${lat.toFixed(2)}, ${lon.toFixed(2)}].`;
-      
-      // Display flight information
-      displayFlightInfo({
-        callsign,
-        icao24,
-        originCountry,
-        lat,
-        lon,
-        altitude,
-        velocity,
-        verticalRate,
-        onGround,
-        lastContact
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopAutoRefresh();
+      else startAutoRefresh();
+    });
+
+    // ==============================
+    // Alerts
+    // ==============================
+
+    function updateAlertsUI() {
+      if (!alerts.length) {
+        alertsList.innerHTML = `
+          <div class="text-center text-slate-400 dark:text-slate-500">
+            No alerts yet. We’ll show take-off, landing, and major altitude changes here.
+          </div>`;
+        return;
+      }
+      const recent = alerts.slice(-30);
+      alertsList.innerHTML = recent.map(a => `
+        <div class="border-b border-slate-200/40 dark:border-slate-700/40 pb-1 last:border-b-0">
+          <div class="font-medium">${a.code}: ${a.message}</div>
+          <div class="text-[0.7rem] text-slate-400 dark:text-slate-500">${a.time}</div>
+        </div>
+      `).join("");
+    }
+
+    function maybeGenerateAlerts(code, prevInfo, newInfo) {
+      if (!prevInfo) return;
+      const events = [];
+
+      if (prevInfo.onGround && !newInfo.onGround) {
+        events.push("Take-off (airborne)");
+      }
+      if (!prevInfo.onGround && newInfo.onGround) {
+        events.push("Landed (on ground)");
+      }
+
+      const prevFt = prevInfo.altitude * 3.28084;
+      const newFt = newInfo.altitude * 3.28084;
+      if (Math.abs(newFt - prevFt) > 1500) {
+        const dir = newFt > prevFt ? "Climbing" : "Descending";
+        events.push(`${dir}: altitude changed by ~${Math.round(Math.abs(newFt - prevFt))} ft`);
+      }
+
+      events.forEach(msg => {
+        alerts.push({ time: nowLabel(), code, message: msg });
       });
-      
-      // Fetch additional flight details (departure/arrival times)
-      fetchFlightDetails(callsign);
     }
-    
-    // Fetch flight schedule details from AviationStack API
-    async function fetchFlightDetails(callsign) {
-      try {
-        // Note: AviationStack requires API key. Using demo/placeholder logic here.
-        // For production, sign up at aviationstack.com or aviation-edge.com
-        // and replace with: https://api.aviationstack.com/v1/flights?access_key=YOUR_KEY&flight_iata=${callsign}
-        
-        // Demo: Simulate schedule data based on current flight
-        const flightDetailsEl = document.getElementById("flightDetailsSchedule");
-        if (flightDetailsEl) {
-          // Simulated data - in production, fetch from actual API
-          const now = new Date();
-          const departureTime = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
-          const arrivalTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
-          
-          flightDetailsEl.innerHTML = `
-            <div class="info-item">
-              <div class="info-label">Departed</div>
-              <div class="info-value">${departureTime.toLocaleString('en-US', { 
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-              })}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Expected Arrival</div>
-              <div class="info-value">${arrivalTime.toLocaleString('en-US', { 
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-              })}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Flight Duration</div>
-              <div class="info-value">~5 hours</div>
-            </div>
-          `;
-          
-          // Note shown to user
-          const noteEl = document.createElement('div');
-          noteEl.style.cssText = 'grid-column: 1 / -1; padding: 12px; background: rgba(33, 128, 141, 0.1); border-radius: 6px; font-size: 0.9rem; margin-top: 8px;';
-          noteEl.innerHTML = '<strong>Note:</strong> Departure and arrival times are simulated. For real schedule data, integrate AviationStack or Aviation Edge API with your API key.';
-          flightDetailsEl.appendChild(noteEl);
+
+    // ==============================
+    // Rendering / tracking
+    // ==============================
+
+    function renderTrackedFlights(frameTimeOverride) {
+      const points = [];
+      const arcs = [];
+
+      trackedFlights.forEach((entry, code) => {
+        if (!entry.history || !entry.history.length) return;
+
+        let lat, lon, callsign;
+        if (!frameTimeOverride || !isPlaybackMode) {
+          const info = stateToInfo(entry.state);
+          lat = info.lat;
+          lon = info.lon;
+          callsign = info.callsign || code;
+        } else {
+          const h = entry.history;
+          let best = h[0];
+          for (let i = 1; i < h.length; i++) {
+            if (h[i].t <= frameTimeOverride) best = h[i];
+          }
+          lat = best.lat;
+          lon = best.lon;
+          callsign = entry.callsign || code;
         }
-      } catch (err) {
-        console.error('Could not fetch flight schedule details:', err);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+        const isSelected = selectedCodeForDetails === code;
+
+        points.push({
+          lat,
+          lng: lon,
+          size: isSelected ? 0.25 : 0.18,
+          color: isSelected ? "#f97316" : "#38bdf8",
+          label: `Flight ${callsign}`
+        });
+
+        const history = entry.history;
+        if (history.length >= 2) {
+          const first = history[0];
+          const last = frameTimeOverride && isPlaybackMode
+            ? (() => {
+                let best = history[0];
+                for (let i = 1; i < history.length; i++) {
+                  if (history[i].t <= frameTimeOverride) best = history[i];
+                }
+                return best;
+              })()
+            : history[history.length - 1];
+
+          arcs.push({
+            startLat: first.lat,
+            startLng: first.lon,
+            endLat: last.lat,
+            endLng: last.lon,
+            color: ["#22d3ee", "#0ea5e9"],
+            label: `${entry.callsign || code} path`
+          });
+        }
+      });
+
+      if (plannedRouteArc) arcs.push(plannedRouteArc);
+
+      GlobeInstance
+        .pointsData(points)
+        .pointAltitude(0.01)
+        .pointRadius(0.3)
+        .pointColor("color")
+        .pointLabel("label");
+
+      GlobeInstance
+        .arcsData(arcs)
+        .arcStroke(0.5)
+        .arcDashLength(0.4)
+        .arcDashGap(0.2)
+        .arcDashInitialGap(0.7)
+        .arcDashAnimateTime(2500)
+        .arcColor("color")
+        .arcLabel("label");
+    }
+
+    async function refreshTrackedFlights() {
+      if (!trackedCodes.size) return;
+      const states = await fetchFlightsData({ showStatus: false });
+      if (!states.length) return;
+      if (isPlaybackMode) return;
+
+      let anyVisible = false;
+      let lastInfo = null;
+
+      trackedCodes.forEach(code => {
+        const s = findFlightByCode(states, code);
+        if (!s) return;
+        anyVisible = true;
+        const info = stateToInfo(s);
+        lastInfo = info;
+
+        let entry = trackedFlights.get(code);
+        if (!entry) {
+          entry = { state: s, history: [], callsign: info.callsign || code };
+          trackedFlights.set(code, entry);
+        }
+        entry.state = s;
+        entry.callsign = info.callsign || code;
+        entry.history = entry.history || [];
+
+        if (Number.isFinite(info.lat) && Number.isFinite(info.lon)) {
+          entry.history.push({ lat: info.lat, lon: info.lon, t: Date.now() });
+          if (entry.history.length > 240) entry.history.shift();
+        }
+
+        const prev = previousFlightInfos.get(code);
+        maybeGenerateAlerts(code, prev, info);
+        previousFlightInfos.set(code, info);
+      });
+
+      updateAlertsUI();
+      renderTrackedFlights();
+
+      const cnt = trackedCodes.size;
+      if (anyVisible && lastInfo) {
+        displayFlightInfo(lastInfo);
+        selectedCodeForDetails = lastInfo.callsign || null;
+        GlobeInstance.pointOfView(
+          { lat: lastInfo.lat, lng: lastInfo.lon, altitude: 2.2 },
+          1400
+        );
+        statusBar.textContent = `Tracking ${cnt} flight${cnt > 1 ? "s" : ""} (live from OpenSky).`;
+      } else if (cnt) {
+        statusBar.textContent =
+          `Tracking ${cnt} flight${cnt > 1 ? "s" : ""}, but none currently visible in OpenSky data.`;
       }
     }
 
-    // Display detailed flight information
     function displayFlightInfo(info) {
-      const flightInfoEl = document.getElementById("flightInfo");
-      const infoGridEl = document.getElementById("infoGrid");
-      
-      // Convert velocity from m/s to km/h
       const speedKmh = Math.round(info.velocity * 3.6);
       const speedKnots = Math.round(info.velocity * 1.94384);
-      
-      // Convert altitude to feet
       const altitudeFt = Math.round(info.altitude * 3.28084);
-      
-      // Format last contact time
+
       const lastContactDate = new Date(info.lastContact * 1000);
-      const timeAgo = Math.round((Date.now() - lastContactDate.getTime()) / 1000);
-      const timeAgoStr = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.round(timeAgo/60)}m ago`;
-      
-      // Determine flight status
-      const status = info.onGround ? "On Ground" : "In Flight";
-      const statusColor = info.onGround ? "#e67e22" : "#27ae60";
-      
-      // Extract airline from callsign (first 3 chars typically airline code)
-      const airlineCode = info.callsign.substring(0, 3);
-      
-      // Create info items
-      const infoItems = [
-        { label: "Flight", value: info.callsign },
-        { label: "ICAO24", value: info.icao24.toUpperCase() },
-        { label: "Airline Code", value: airlineCode },
-        { label: "Origin Country", value: info.originCountry },
+      const diffSec = Math.round((Date.now() - lastContactDate.getTime()) / 1000);
+      const timeAgoStr = diffSec < 60 ? `${diffSec}s ago` : `${Math.round(diffSec / 60)}m ago`;
+
+      const status = info.onGround ? "On ground" : "In flight";
+      const statusColor = info.onGround ? "#
+f97316" : "#22c55e";
+      const airlineCode = info.callsign ? info.callsign.slice(0, 3) : "";
+
+      const items = [
+        { label: "Flight", value: info.callsign || "N/A" },
+        { label: "ICAO24", value: (info.icao24 || "").toUpperCase() },
+        { label: "Airline Code", value: airlineCode || "N/A" },
+        { label: "Origin Country", value: info.originCountry || "Unknown" },
         { label: "Status", value: status, color: statusColor },
-        { label: "Altitude", value: info.onGround ? "Ground Level" : `${altitudeFt.toLocaleString()} ft (${Math.round(info.altitude)} m)` },
-        { label: "Speed", value: info.onGround ? "Stationary" : `${speedKmh} km/h (${speedKnots} knots)` },
-        { label: "Position", value: `${info.lat.toFixed(4)}°, ${info.lon.toFixed(4)}°` },
-        { label: "Vertical Rate", value: info.verticalRate === 0 ? "Level" : `${info.verticalRate > 0 ? '↑' : '↓'} ${Math.abs(Math.round(info.verticalRate))} m/s` },
-        { label: "Last Updated", value: timeAgoStr }
+        {
+          label: "Altitude",
+          value: info.onGround
+            ? "Ground level"
+            : `${altitudeFt.toLocaleString()} ft (${Math.round(info.altitude)} m)`
+        },
+        {
+          label: "Speed",
+          value: info.onGround
+            ? "Stationary"
+            : `${speedKmh} km/h (${speedKnots} knots)`
+        },
+        {
+          label: "Position",
+          value: Number.isFinite(info.lat) && Number.isFinite(info.lon)
+            ? `${info.lat.toFixed(4)}°, ${info.lon.toFixed(4)}°`
+            : "Unknown"
+        },
+        {
+          label: "Vertical rate",
+          value: info.verticalRate === 0
+            ? "Level"
+            : `${info.verticalRate > 0 ? "↑" : "↓"} ${Math.abs(Math.round(info.verticalRate))} m/s`
+        },
+        { label: "Last contact", value: timeAgoStr }
       ];
-      
-      // Build HTML
-      infoGridEl.innerHTML = infoItems.map(item => `
-        <div class="info-item">
-          <div class="info-label">${item.label}</div>
-          <div class="info-value" ${item.color ? `style="color: ${item.color}"` : ''}>${item.value}</div>
+
+      infoGridEl.innerHTML = items.map(item => `
+        <div class="space-y-0.5">
+          <div class="text-[0.7rem] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            ${item.label}
+          </div>
+          <div class="text-sm font-medium" style="${item.color ? `color:${item.color}` : ""}">
+            ${item.value}
+          </div>
         </div>
-      `).join('') + '<div id="flightDetailsSchedule" style="display: contents;"></div>';
-      
-      flightInfoEl.style.display = 'block';
+      `).join("");
+
+      flightInfoEl.classList.remove("hidden");
     }
 
-    // Clear all visualizations
-    function clearGlobe() {
-      GlobeInstance.pointsData([]);
-      GlobeInstance.arcsData([]);
-      statusBar.textContent = '';
-      document.getElementById("flightInfo").style.display = 'none';
+    // ==============================
+    // Autocomplete (from latest OpenSky snapshot)
+    // ==============================
+
+    function buildAutocompleteSuggestions(query) {
+      const q = query.trim().toUpperCase();
+      if (!q) {
+        autocompleteBox.classList.add("hidden");
+        autocompleteBox.innerHTML = "";
+        return;
+      }
+      const suggestions = [];
+      if (lastStates && lastStates.length) {
+        for (const s of lastStates) {
+          const csRaw = s[1];
+          const origin = s[2];
+          if (!csRaw) continue;
+          const cs = csRaw.trim().toUpperCase();
+          if (!cs || !cs.includes(q)) continue;
+          suggestions.push({ code: cs, origin: origin || "Unknown" });
+          if (suggestions.length >= 12) break;
+        }
+      }
+      if (!suggestions.length) {
+        autocompleteBox.classList.add("hidden");
+        autocompleteBox.innerHTML = "";
+        return;
+      }
+      autocompleteBox.innerHTML = suggestions.map(s => `
+        <button
+          type="button"
+          data-code="${s.code}"
+          class="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        >
+          <span class="font-medium">${s.code}</span>
+          <span class="text-[0.7rem] text-slate-400 dark:text-slate-500">${s.origin}</span>
+        </button>
+      `).join("");
+      autocompleteBox.classList.remove("hidden");
     }
 
-    // Event: User submits search
-    form.addEventListener("submit", async (e) => {
+    autocompleteBox.addEventListener("click", e => {
+      const btn = e.target.closest("button[data-code]");
+      if (!btn) return;
+      const code = btn.getAttribute("data-code");
+      const existing = input.value.trim();
+      input.value = existing ? (existing + ", " + code) : code;
+      autocompleteBox.classList.add("hidden");
+      autocompleteBox.innerHTML = "";
+      input.focus();
+    });
+
+    input.addEventListener("input", () => {
+      buildAutocompleteSuggestions(input.value);
+    });
+
+    input.addEventListener("blur", () => {
+      setTimeout(() => {
+        autocompleteBox.classList.add("hidden");
+      }, 150);
+    });
+
+    // ==============================
+    // Playback (session-based)
+    // ==============================
+
+    function computePlaybackBounds() {
+      let minT = Infinity;
+      let maxT = -Infinity;
+      trackedFlights.forEach(entry => {
+        if (!entry.history || !entry.history.length) return;
+        minT = Math.min(minT, entry.history[0].t);
+        maxT = Math.max(maxT, entry.history[entry.history.length - 1].t);
+      });
+      if (!isFinite(minT) || !isFinite(maxT) || minT >= maxT) return null;
+      return { start: minT, end: maxT };
+    }
+
+    function setPlaybackSliderFromTime(time) {
+      if (playbackEnd <= playbackStart) return;
+      const ratio = (time - playbackStart) / (playbackEnd - playbackStart);
+      const val = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+      playbackSlider.value = val;
+      playbackTimeLabel.textContent = new Date(time).toLocaleTimeString("en-US", { hour12: false });
+    }
+
+    function setPlaybackTimeFromSlider() {
+      const val = parseInt(playbackSlider.value, 10);
+      const ratio = val / 100;
+      playbackTime = playbackStart + ratio * (playbackEnd - playbackStart);
+      renderTrackedFlights(playbackTime);
+      playbackTimeLabel.textContent = new Date(playbackTime).toLocaleTimeString("en-US", { hour12: false });
+    }
+
+    function startPlayback() {
+      const bounds = computePlaybackBounds();
+      if (!bounds) {
+        statusBar.textContent = "Not enough history yet for playback.";
+        return;
+      }
+      isPlaybackMode = true;
+      stopAutoRefresh();
+      playbackStart = bounds.start;
+      playbackEnd = bounds.end;
+      playbackTime = playbackStart;
+      playbackSlider.disabled = false;
+      playbackToggleBtn.textContent = "Exit Playback";
+      setPlaybackSliderFromTime(playbackTime);
+      playbackTimeLabel.textContent = new Date(playbackTime).toLocaleTimeString("en-US", { hour12: false });
+
+      if (playbackTimerId) clearInterval(playbackTimerId);
+      playbackTimerId = setInterval(() => {
+        playbackTime += 1000 * playbackSpeed;
+        if (playbackTime > playbackEnd) playbackTime = playbackStart;
+        setPlaybackSliderFromTime(playbackTime);
+        renderTrackedFlights(playbackTime);
+      }, 500);
+    }
+
+    function stopPlayback() {
+      isPlaybackMode = false;
+      if (playbackTimerId) {
+        clearInterval(playbackTimerId);
+        playbackTimerId = null;
+      }
+      playbackSlider.disabled = true;
+      playbackSlider.value = 0;
+      playbackTimeLabel.textContent = "Live";
+      playbackToggleBtn.textContent = "Enter Playback";
+      if (trackedCodes.size) {
+        startAutoRefresh();
+        refreshTrackedFlights();
+      }
+    }
+
+    playbackToggleBtn.addEventListener("click", () => {
+      if (isPlaybackMode) stopPlayback();
+      else startPlayback();
+    });
+
+    playbackSlider.addEventListener("input", () => {
+      if (!isPlaybackMode) return;
+      setPlaybackTimeFromSlider();
+    });
+
+    // ==============================
+    // Route planning
+    // ==============================
+
+    function planRoute(fromCode, toCode) {
+      const from = findAirportByIata(fromCode);
+      const to = findAirportByIata(toCode);
+      if (!from || !to) {
+        routeMeta.textContent = "Unknown airport code(s). Try major hubs like ICN, LHR, JFK, LAX.";
+        plannedRouteArc = null;
+        renderTrackedFlights(isPlaybackMode ? playbackTime : undefined);
+        return;
+      }
+      const dKm = calculateGreatCircleDistance(from.lat, from.lon, to.lat, to.lon);
+      plannedRouteArc = {
+        startLat: from.lat,
+        startLng: from.lon,
+        endLat: to.lat,
+        endLng: to.lon,
+        color: ["#f97316", "#fb923c"],
+        label: `Planned route ${from.iata} → ${to.iata}`
+      };
+      routeMeta.textContent = `${from.name} (${from.iata}) → ${to.name} (${to.iata}): ${formatDistanceKm(dKm)} (great-circle).`;
+      renderTrackedFlights(isPlaybackMode ? playbackTime : undefined);
+    }
+
+    routeForm.addEventListener("submit", e => {
       e.preventDefault();
-      clearGlobe();
+      const from = routeFromInput.value.trim();
+      const to = routeToInput.value.trim();
+      if (!from || !to) {
+        routeMeta.textContent = "Please enter both origin and destination IATA codes.";
+        return;
+      }
+      planRoute(from, to);
+    });
 
-      const query = input.value || '';
-      const code = parseSearch(query);
-      if (!code) {
-        statusBar.textContent = "Please enter a valid flight code or celebrity name.";
+    // ==============================
+    // Share link
+    // ==============================
+
+    function updateShareUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (trackedCodes.size) {
+        params.set("flight", Array.from(trackedCodes).join(","));
+      } else {
+        params.delete("flight");
+      }
+      const newUrl = window.location.pathname + "?" + params.toString();
+      window.history.replaceState(null, "", newUrl);
+    }
+
+    function initShareLinkSupport() {
+      const params = new URLSearchParams(window.location.search);
+      const f = params.get("flight");
+      if (!f) return;
+      input.value = f;
+      form.dispatchEvent(new Event("submit"));
+    }
+
+    // ==============================
+    // Form handling
+    // ==============================
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const query = input.value || "";
+      const codes = resolveQueryToCodes(query);
+      if (!codes.length) {
+        statusBar.textContent = "Enter at least one valid callsign (letters+digits).";
+        return;
+      }
+      codes.forEach(c => trackedCodes.add(c));
+      selectedCodeForDetails = codes[codes.length - 1];
+      updateShareUrl();
+
+      statusBar.textContent = "Looking up selected flight(s)…";
+      const states = await fetchFlightsData({ showStatus: false });
+      if (!states.length) {
+        statusBar.textContent = "Could not load live flight data.";
         return;
       }
 
-      statusBar.textContent = "Looking up flight information…";
-      let attempt = 0;
-      let found = false;
+      let anyFound = false;
+      codes.forEach(code => {
+        const s = findFlightByCode(states, code);
+        if (!s) return;
+        anyFound = true;
+        const info = stateToInfo(s);
 
-      while (attempt < 2 && !found) {
-        const states = await fetchFlightsData();
-        if (states.length === 0) {
-          statusBar.textContent = "Could not load live flight data.";
-          return;
+        let entry = trackedFlights.get(code);
+        if (!entry) {
+          entry = { state: s, history: [], callsign: info.callsign || code };
+          trackedFlights.set(code, entry);
         }
-        // Try to find the matching live flight state
-        const flight = findFlightByCode(states, code);
-        if (flight) {
-          visualizeFlight(flight);
-          found = true;
-        } else {
-          if (attempt === 0) {
-            // Retry after short sleep (flights data may update)
-            statusBar.textContent = "Flight not found immediately, retrying…";
-            await sleep(1600);
-          }
-          attempt++;
+        entry.state = s;
+        entry.callsign = info.callsign || code;
+        if (Number.isFinite(info.lat) && Number.isFinite(info.lon)) {
+          entry.history.push({ lat: info.lat, lon: info.lon, t: Date.now() });
+        }
+        previousFlightInfos.set(code, info);
+      });
+
+      if (!anyFound) {
+        statusBar.textContent = "These callsigns are not currently visible in OpenSky live data.";
+      } else {
+        renderTrackedFlights();
+        const lastCode = codes[codes.length - 1];
+        const entry = trackedFlights.get(lastCode);
+        if (entry && entry.state) {
+          const info = stateToInfo(entry.state);
+          displayFlightInfo(info);
+          GlobeInstance.pointOfView(
+            { lat: info.lat, lng: info.lon, altitude: 2.3 },
+            1500
+          );
         }
       }
 
-      if (!found) {
-        statusBar.textContent = "Flight not found. Try a different code or search at a different time.";
+      if (!isPlaybackMode) {
+        startAutoRefresh();
       }
     });
 
-    // Demo tip
-    statusBar.textContent = "Try: BA58, AAL100, or search 'Taylor Swift'. Flight data is limited to what's airborne now (OpenSky Network).";
+    // ==============================
+    // Init globe & bootstrap
+    // ==============================
+
+    function initGlobe() {
+      GlobeInstance = Globe()(globeEl)
+        .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+        .backgroundColor("#f8fafc")
+        .showGraticules(true)
+        .width(globeEl.offsetWidth)
+        .height(globeEl.offsetHeight)
+        // Major airport labels
+        .labelsData(AIRPORTS)
+        .labelLat(d => d.lat)
+        .labelLng(d => d.lon)
+        .labelText(d => d.iata)
+        .labelSize(() => 0.6)
+        .labelColor(() => "rgba(79,70,229,0.9)")
+        .labelAltitude(0.01);
+
+      window.addEventListener("resize", () => {
+        GlobeInstance.width([globeEl.offsetWidth]);
+        GlobeInstance.height([globeEl.offsetHeight]);
+      });
+    }
+
+    (async function bootstrap() {
+      initTheme();
+      initGlobe();
+
+      statusBar.textContent = "Type a callsign like BA58 or AAL100. Data comes live from OpenSky Network.";
+
+      // Preload snapshot for autocomplete & share links
+      fetchFlightsData({ showStatus: false }).then(() => {
+        initShareLinkSupport();
+      });
+    })();
   </script>
 </body>
 </html>
