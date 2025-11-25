@@ -154,12 +154,12 @@
     </section>
 
     <!-- Info / Alerts / Route -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start justify-items-center">
+    <section class="mt-4 flex flex-col md:flex-row justify-center gap-6 items-start">
 
       <!-- Flight Details -->
       <div
         id="flightInfo"
-        class="hidden max-w-md w-full bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4"
+        class="hidden w-full md:max-w-md mx-auto bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4"
       >
         <h2 class="text-base sm:text-lg font-semibold mb-3 text-center">
           Flight Details
@@ -167,8 +167,8 @@
         <div id="infoGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"></div>
       </div>
 
-      <!-- Alerts + Route (centered) -->
-      <div class="w-full max-w-md flex flex-col gap-4 items-center">
+      <!-- Alerts + Route (centered group) -->
+      <div class="w-full md:max-w-md mx-auto flex flex-col gap-4 items-center">
 
         <!-- Alerts -->
         <div class="w-full bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm px-4 sm:px-5 py-4 text-sm text-center">
@@ -670,8 +670,7 @@
       const timeAgoStr = diffSec < 60 ? `${diffSec}s ago` : `${Math.round(diffSec / 60)}m ago`;
 
       const status = info.onGround ? "On ground" : "In flight";
-      const statusColor = info.onGround ? "#
-f97316" : "#22c55e";
+      const statusColor = info.onGround ? "#f97316" : "#22c55e";
       const airlineCode = info.callsign ? info.callsign.slice(0, 3) : "";
 
       const items = [
